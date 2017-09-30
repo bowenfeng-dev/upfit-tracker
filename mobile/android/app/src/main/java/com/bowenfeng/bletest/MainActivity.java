@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.UUID;
@@ -21,17 +22,18 @@ public class MainActivity extends Activity {
     private static final int REQUEST_ENABLE_BT = 10101;
 
     private TextView textView;
+    private TextView statusView;
 
     private int number = 0;
     private long lastPressure = 0;
 
+    private boolean isStarted = false;
     private boolean isUpwards = false;
 
     private static UUID SERVICE_ID = UUID.fromString("713d0000-503e-4c75-ba94-3148f18d941e");
     private static UUID CHAR_ID = UUID.fromString("713d0002-503e-4c75-ba94-3148f18d941e");
     private static UUID DESC_ID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    private BluetoothGattService mBleService;
     private BluetoothGattCharacteristic mBleChar;
 
     private BluetoothAdapter mBluetoothAdapter;
@@ -45,10 +47,11 @@ public class MainActivity extends Activity {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             System.out.println("onConnectionStateChange:" + newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                System.out.println("Connected!");
+                statusView.setText(R.string.sensor_status_connected);
                 mBluetoothGatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                System.out.println("Disconnected!");
+                statusView.setText(R.string.sensor_status_disconnected);
+                scanBleDeivce();
             }
         }
 
@@ -65,6 +68,9 @@ public class MainActivity extends Activity {
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            if (!isStarted) {
+                return;
+            }
             long pressure = getPressure(characteristic.getValue());
             long diff = pressure - lastPressure;
             lastPressure = pressure;
@@ -80,7 +86,6 @@ public class MainActivity extends Activity {
                     textView.setText(Integer.toString(number));
                 }
             }
-            System.out.println("Pressure = " + pressure);
         }
     };
 
@@ -89,7 +94,7 @@ public class MainActivity extends Activity {
     }
 
     private void initServiceAndCharacteristic() {
-        mBleService = mBluetoothGatt.getService(SERVICE_ID);
+        BluetoothGattService mBleService = mBluetoothGatt.getService(SERVICE_ID);
         mBleChar = mBleService.getCharacteristic(CHAR_ID);
     }
 
@@ -105,7 +110,16 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textView = this.findViewById(R.id.textView);
+        textView = findViewById(R.id.textView);
+        statusView = findViewById(R.id.statusView);
+
+        final Button button = findViewById(R.id.button);
+        button.setOnClickListener(v -> {
+            isStarted = !isStarted;
+            button.setText(isStarted ? "Stop" : "Start");
+            number = isStarted ? 0 : number;
+            textView.setText(Integer.toString(number));
+        });
 
         initBluetooth();
         scanBleDeivce();

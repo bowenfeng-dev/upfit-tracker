@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">BleTest</string>
+    <string name="app_name">UpFit Tracker</string>
+    <string name="sensor_status_connected">Sensor connected</string>
+    <string name="sensor_status_disconnected">Sensor disconnected</string>
 </resources>
